@@ -1,0 +1,57 @@
+--- 
+base_path: /data/src
+dry_run: false
+packages: 
+  naxsi: 
+    configure: false
+    local: patches/naxsi
+    remote: "https://github.com/nbs-system/naxsi.git"
+    version: 0.53-2
+    install: false
+  nginx: 
+    configure: 
+      flags: 
+        - "--add-module=#{base_path}/patches/naxsi/naxsi_src"
+    depends: 
+      - patches/naxsi
+    local: www/nginx
+    remote: "https://github.com/nginx/nginx.git"
+    version: v1.5.9
+  node: 
+    configure: true
+    local: www/node
+    needs_autoconf: true
+    remote: "https://github.com/joyent/node.git"
+    version: v0.10.25
+  php: 
+    configure: 
+      flags: 
+        - "--enable-fpm"
+        - "--enable-json"
+        - "--with-openssl"
+    local: lang/php
+    remote: "https://github.com/php/php-src.git"
+    version: php-5.5.9
+  redis: 
+    configure: false
+    local: databases/redis
+    remote: "https://github.com/antirez/redis.git"
+    version: "2.8.5"
+  ruby: 
+    configure: true
+    local: lang/ruby
+    needs_autoconf: true
+    remote: "https://github.com/ruby/ruby.git"
+    version: v2_1_0
+  supervisor: 
+    alternate_install: "python setup.py install"
+    configure: false
+    local: sysutils/supervisor
+    remote: "https://github.com/Supervisor/supervisor.git"
+    version: 3.0
+  zsh: 
+    configure: true
+    local: shells/zsh
+    needs_autoconf: true
+    remote: "https://github.com/zsh-users/zsh.git"
+    version: zsh-5.0.5
