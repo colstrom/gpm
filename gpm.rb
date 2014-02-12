@@ -4,51 +4,54 @@ require 'yaml'
 
 config = YAML.load_file 'gpm.yaml'
 
+# Simple wrapper that either runs or prints a command.
 class CommandWrapper
   attr_reader :run
-  def initialize dry_run
+
+  def initialize(dry_run)
     @execution = dry_run ? 'puts' : 'system'
   end
-  def run command
+
+  def run(command)
     method(@execution).call command
   end
 end
 
 Command = CommandWrapper.new config['dry_run']
 
-def create_directory directory
+def create_directory(directory)
   Command.run "mkdir --parents #{directory}"
 end
 
-def change_to directory
+def change_to(directory)
   Command.run "cd #{directory}"
 end
 
-def directory_exists? directory
+def directory_exists?(directory)
   File.directory? directory
 end
 
-def sync_with_upstream directory, repository
+def sync_with_upstream(directory, repository)
   create_directory directory unless directory_exists? directory
   change_to directory
   if directory_exists? '.git'
-    Command.run "git pull"
+    Command.run 'git pull'
   else
     Command.run "git clone #{repository} ."
   end
 end
 
-def checkout_version tag
+def checkout_version(tag)
   Command.run "git checkout #{tag}"
 end
 
-def run_configure package, config
+def run_configure(package, config)
   configure = './configure'
 
   unless package['configure'].class == TrueClass
-    if package['configure']['flags'] then
+    if package['configure']['flags']
       package['configure']['flags'].each do |flag|
-        configure << " " + flag
+        configure << ' ' + flag
       end
     end
   end
@@ -60,7 +63,7 @@ def run_autoconf
   Command.run 'autoconf'
 end
 
-def install package
+def install(package)
   if package['alternate_install']
     alternate_install package
   else
@@ -68,15 +71,15 @@ def install package
   end
 end
 
-def build package
+def build(package)
   Command.run 'make'
 end
 
-def traditional_install package
+def traditional_install(package)
   Command.run 'make install'
 end
 
-def alternate_install package
+def alternate_install(package)
   Command.run package['alternate_install']
 end
 
