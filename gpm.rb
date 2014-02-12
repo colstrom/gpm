@@ -4,12 +4,24 @@ require 'yaml'
 
 config = YAML.load_file 'gpm.yaml'
 
+class CommandWrapper
+  attr_reader :run
+  def initialize dry_run
+    @execution = dry_run ? 'puts' : 'system'
+  end
+  def run command
+    method(@execution).call command
+  end
+end
+
+Command = CommandWrapper.new config['dry_run']
+
 def create_directory directory
-  puts "mkdir --parents #{directory}"
+  Command.run "mkdir --parents #{directory}"
 end
 
 def change_to directory
-  puts "cd #{directory}"
+  Command.run "cd #{directory}"
 end
 
 def directory_exists? directory
@@ -20,14 +32,14 @@ def sync_with_upstream directory, repository
   create_directory directory unless directory_exists? directory
   change_to directory
   if directory_exists? '.git'
-    puts "git pull"
+    Command.run "git pull"
   else
-    puts "git clone #{repository} ."
+    Command.run "git clone #{repository} ."
   end
 end
 
 def checkout_version tag
-  puts "git checkout #{tag}"
+  Command.run "git checkout #{tag}"
 end
 
 def run_configure package, config
@@ -41,30 +53,31 @@ def run_configure package, config
     end
   end
   configure.gsub!('#{base_path}', "#{config['base_path']}")
-  puts "#{configure}"
+  Command.run "#{configure}"
 end
 
 def run_autoconf
-  puts 'autoconf'
+  Command.run 'autoconf'
 end
 
 def install package
-  unless package['install'] == false
-    if package['alternate_install']
-      alternate_install package
-    else
-      traditional_install package
-    end
+  if package['alternate_install']
+    alternate_install package
+  else
+    traditional_install package
   end
 end
 
+def build package
+  Command.run 'make'
+end
+
 def traditional_install package
-  puts 'make'
-  puts 'make install'
+  Command.run 'make install'
 end
 
 def alternate_install package
-  puts package['alternate_install']
+  Command.run package['alternate_install']
 end
 
 config['packages'].each do |name, package|
@@ -76,5 +89,6 @@ config['packages'].each do |name, package|
 
   run_autoconf if package['needs_autoconf']
   run_configure package, config if package['configure']
-  install package unless config['dry_run']
+  build package unless package['build'] == false
+  install package unless package['install'] == false
 end

@@ -1,8 +1,9 @@
 --- 
 base_path: /data/src
-dry_run: false
+dry_run: true
 packages: 
   naxsi: 
+    build: false
     configure: false
     local: patches/naxsi
     remote: "https://github.com/nbs-system/naxsi.git"
@@ -45,6 +46,7 @@ packages:
     version: v2_1_0
   supervisor: 
     alternate_install: "python setup.py install"
+    build: false
     configure: false
     local: sysutils/supervisor
     remote: "https://github.com/Supervisor/supervisor.git"
