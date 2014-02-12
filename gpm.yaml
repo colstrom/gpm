@@ -1,6 +1,7 @@
 --- 
 base_path: /data/src
 dry_run: true
+install: false
 packages: 
   naxsi: 
     build: false

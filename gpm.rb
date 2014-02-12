@@ -94,5 +94,7 @@ config['packages'].each do |name, package|
   checkout_version package['version']
 
   build package unless package['build'] == false
-  install package unless package['install'] == false
+  unless package['install'] == false || config['build_only'] == false
+    install package
+  end
 end
