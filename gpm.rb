@@ -45,16 +45,16 @@ def checkout_version(tag)
   Command.run "git checkout #{tag}"
 end
 
-def run_configure(package, config)
-  configure = './configure'
-
-  unless package['configure'].class == TrueClass
-    if package['configure']['flags']
-      package['configure']['flags'].each do |flag|
-        configure << ' ' + flag
-      end
-    end
+def get_flags(configure_data)
+  if configure_data.class == Hash
+    configure_data['flags'] || []
+  else
+    []
   end
+end
+
+def configure(package, config)
+  configure = './configure ' + get_flags(package['configure']).join(' ')
   configure.gsub!('#{base_path}', "#{config['base_path']}")
   Command.run "#{configure}"
 end
@@ -67,15 +67,18 @@ def install(package)
   if package['alternate_install']
     alternate_install package
   else
-    traditional_install package
+    traditional_install
   end
 end
 
-def build(package)
+def build(package, clean = false)
+  run_autoconf if package['needs_autoconf']
+  configure package, config if package['configure']
+  Command.run 'make clean' if clean
   Command.run 'make'
 end
 
-def traditional_install(package)
+def traditional_install
   Command.run 'make install'
 end
 
@@ -85,13 +88,11 @@ end
 
 config['packages'].each do |name, package|
   puts "\nFor package #{name}..."
-  package_path = config['base_path'] + '/' + package['local']
+  package_path = "#{config['base_path']}/#{package['local']}"
 
   sync_with_upstream package_path, package['remote']
   checkout_version package['version']
 
-  run_autoconf if package['needs_autoconf']
-  run_configure package, config if package['configure']
   build package unless package['build'] == false
   install package unless package['install'] == false
 end
