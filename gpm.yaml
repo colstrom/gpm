@@ -1,7 +1,6 @@
 --- 
 base_path: /data/src
 dry_run: true
-build_only: true
 packages: 
   naxsi: 
     build: false

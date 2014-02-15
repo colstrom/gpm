@@ -12,14 +12,18 @@ Config = YAML.load_file 'gpm.yaml'
 
 # Simple wrapper that either runs or prints a command.
 class CommandWrapper
-  attr_reader :run, :change
+  attr_reader :run, :is_real, :is_safe
 
   def initialize(dry_run)
     @execution = dry_run ? 'puts' : 'system'
   end
 
-  def change(execution)
-    @execution = execution
+  def is_real
+    initialize false
+  end
+
+  def is_safe
+    initialize true
   end
 
   def run(command)
@@ -35,6 +39,7 @@ end
 
 def change_to(directory)
   Command.run "cd #{directory}"
+  Dir.chdir directory if directory_exists? directory
 end
 
 def directory_exists?(directory)
@@ -81,7 +86,7 @@ def install(package)
   end
 end
 
-def build(package, clean = false)
+def build(package, clean = true)
   run_autoconf if package['needs_autoconf']
   configure package if package['configure']
   Command.run 'make clean' if clean
@@ -160,8 +165,8 @@ command :install do |c|
   c.option '--for-real', 'Actually installs. Default is dry-run.'
   c.option '--release STRING', String, 'Install a specific release (as referenced by git tag).'
   c.action do |args, options|
-    options.default :build_only => Config['build_only'], :for_real => false
-    Command.change('echo') if options.for_real
+    options.default :build_only => false, :for_real => false
+    Command.is_real if options.for_real
     install_packages args, options.build_only
   end
 end
