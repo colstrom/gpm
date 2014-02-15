@@ -21,7 +21,6 @@ packages:
   node: 
     configure: true
     local: www/node
-    needs_autoconf: true
     remote: "https://github.com/joyent/node.git"
     version: v0.10.25
   php: 
