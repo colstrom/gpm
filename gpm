@@ -87,9 +87,9 @@ def install(package)
 end
 
 def build(package, clean = true)
+  Command.run 'make clean' if clean
   run_autoconf if package['needs_autoconf']
   configure package if package['configure']
-  Command.run 'make clean' if clean
   Command.run 'make'
 end
 
