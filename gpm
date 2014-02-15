@@ -133,7 +133,7 @@ def install_packages(package_list, build_only = false)
     checkout_version package['version']
 
     build package unless package['build'] == false
-    unless package['install'] == false || build_only == false
+    unless package['install'] == false || build_only == true
       install package
     end
   end
