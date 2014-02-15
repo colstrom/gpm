@@ -1,7 +1,7 @@
 --- 
 base_path: /data/src
 dry_run: true
-install: false
+build_only: true
 packages: 
   naxsi: 
     build: false
@@ -44,7 +44,7 @@ packages:
     local: lang/ruby
     needs_autoconf: true
     remote: "https://github.com/ruby/ruby.git"
-    version: v2_1_0
+    version: v2_0_0_353
   supervisor: 
     alternate_install: "python setup.py install"
     build: false
