@@ -24,6 +24,8 @@ packages:
     remote: "https://github.com/joyent/node.git"
     version: v0.10.25
   php: 
+    preconfigure:
+      - "./buildconf --force"
     configure: 
       flags: 
         - "--enable-fpm"
@@ -38,9 +40,10 @@ packages:
     remote: "https://github.com/antirez/redis.git"
     version: "2.8.5"
   ruby: 
+    preconfigure:
+      - "autoconf"
     configure: true
     local: lang/ruby
-    needs_autoconf: true
     remote: "https://github.com/ruby/ruby.git"
     version: v2_0_0_353
   supervisor: 
@@ -51,8 +54,9 @@ packages:
     remote: "https://github.com/Supervisor/supervisor.git"
     version: 3.0
   zsh: 
+    preconfigure:
+      -"autoconf"
     configure: true
     local: shells/zsh
-    needs_autoconf: true
     remote: "https://github.com/zsh-users/zsh.git"
     version: zsh-5.0.5
