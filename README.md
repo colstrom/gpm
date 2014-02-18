@@ -9,4 +9,9 @@ Package Specification
 
 Packages are defined in YAML, as follows:
 
-  packages
+	packages:
+		package-name:
+			build: true|false (default true)
+			configure: true|false|Hash (default true)
+				- "--flags for ./configure" (optional)
+				- "--more!" (optional)
