@@ -27,6 +27,66 @@ end
 
 Command = CommandWrapper.new
 
+# A package, as defined in the YAML spec.
+class Package
+  def initialize(spec)
+    @spec = spec
+  end
+
+  def needs_preconfiguration?
+    @spec['preconfigure'].class == Array
+  end
+
+  def preconfiguration_steps
+    @spec['preconfigure'] || []
+  end
+
+  def preconfigure(package)
+    @preconfiguration_steps.each do |step|
+      Command.run "#{step}"
+    end
+  end
+
+  def configurable?
+    @spec['configure'] != false
+  end
+
+  def configure_flags
+    @spec['configure'].class == Array ? @spec['configure'] : []
+  end
+
+  def buildable?
+    @spec['build'] || true
+  end
+
+  def installable?
+    @spec['install'] || true
+  end
+
+  def installation_method
+    @spec['alternate_install'] || 'make install'
+  end
+
+  def remote
+    @spec['remote']
+  end
+
+  def local_directory
+    Config['base_path'] + @spec['local']
+  end
+
+  def version
+    @spec['version']
+  end
+
+  def checkout_version(tag)
+    change_to(@local_directory)
+    Command.run "git checkout #{tag}"
+  end
+end
+
+
+
 def create_directory(directory)
   Command.run "mkdir --parents #{directory}"
 end
@@ -43,41 +103,37 @@ def directory_exists?(directory)
   File.directory? directory
 end
 
-def sync_with_upstream(package)
-  directory = "#{Config['base_path']}/#{package['local']}"
+def create_directory(directory)
+  if Command.dry_run
+    puts "mkdir --parents"
+  Dir.mkdir()
 
-  create_directory directory unless directory_exists? directory
-  change_to directory
+def sync_with_upstream(package)
+  directory = "#{Config['base_path']}/#{package.local_directory}"
+
+  create_directory package.local_directory unless directory_exists? package.local_directory
+  change_to package.local_directory
   if directory_exists? '.git'
     Command.run 'git pull'
   else
-    Command.run "git clone #{package['remote']} ."
+    Command.run "git clone #{package.remote} ."
   end
 end
 
-def checkout_version(tag)
-  Command.run "git checkout #{tag}"
-end
-
 def get_flags(configure_data)
-  configure_data.class == Hash ? configure_data : []
+  configure_data.class == Array ? configure_data : []
 end
 
 def configure(package)
-  configure = './configure ' + get_flags(package['configure']).join(' ')
+  configure = './configure ' + package.configure_flags.join(' ')
   configure.gsub!('#{base_path}', "#{Config['base_path']}")
   Command.run "#{configure}"
 end
 
-def preconfigure(package)
-  package['preconfigure'].each do |preconfigure_step|
-    Command.run "#{preconfigure_step}"
-  end
-end
 
 def install(package, with_sudo = false)
-  unless package['build_only']
-    installation = package['alternate_install'] || 'make install'
+  if package.installable?
+    installation = package.installation_method
     installation.prepend 'sudo ' if with_sudo
     Command.run "#{installation}"
   end
@@ -85,8 +141,8 @@ end
 
 def build(package, building_clean = true)
   Command.run 'make clean' if building_clean
-  preconfigure package if package['preconfigure']
-  configure package if package['configure']
+  preconfigure package if package.needs_preconfiguration?
+  configure package if package.configurable?
   Command.run 'make'
 end
 
@@ -110,13 +166,15 @@ end
 def install_packages(list, build_only = false, with_sudo = false)
   packages = Config['packages'].select { |name, data| list.include? name }
 
-  packages.each do |name, package|
+  packages.each do |name, spec|
+    package = Package.new spec
+
     puts "\nFor package #{name}..."
 
     sync_with_upstream package
-    checkout_version package['version']
+    checkout_version package.version
 
-    build package unless package['build'] == false
+    build package if package.buildable?
     install package, with_sudo unless build_only == true
   end
 end
