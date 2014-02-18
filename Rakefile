@@ -1,6 +1,6 @@
 require 'metric_fu'
 
-files = 'gpm'
+files = 'gpm.rb'
 
 task default: [:test]
 
