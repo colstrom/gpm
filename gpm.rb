@@ -6,7 +6,7 @@ require 'commander/import'
 require 'fileutils'
 
 program :name, 'gpm'
-program :version, '0.0.1'
+program :version, '1.0.0'
 program :description, 'Ghetto Package Management'
 
 Config = YAML.load_file 'gpm.yaml'
