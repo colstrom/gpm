@@ -41,8 +41,8 @@ class Package
     @spec['preconfigure'] || []
   end
 
-  def preconfigure(package)
-    @preconfiguration_steps.each do |step|
+  def preconfigure
+    preconfiguration_steps.each do |step|
       Command.run "#{step}"
     end
   end
@@ -72,23 +72,50 @@ class Package
   end
 
   def local_directory
-    Config['base_path'] + @spec['local']
+    "#{Config['base_path']}/#{@spec['local']}"
   end
 
   def version
     @spec['version']
   end
 
-  def checkout_version(tag)
-    change_to(@local_directory)
+  def checkout(tag)
+    change_to(local_directory)
     Command.run "git checkout #{tag}"
+  end
+
+  def sync_with_upstream
+    create_directory local_directory
+    change_to local_directory
+    if directory_exists? "#{local_directory}/.git"
+      Command.run 'git pull'
+    else
+      Command.run "git clone #{remote} ."
+    end
+  end
+
+  def configure
+    configuration = './configure ' + configure_flags.join(' ')
+    configuration.gsub!('#{base_path}', "#{Config['base_path']}")
+    Command.run "#{configuration}"
+  end
+
+  def build(building_clean = true)
+    Command.run 'make clean' if building_clean
+    preconfigure if needs_preconfiguration?
+    configure if configurable?
+    Command.run 'make'
+  end
+
+  def install(with_sudo = false)
+    installation = installation_method
+    installation.prepend 'sudo ' if with_sudo
+    Command.run "#{installation}"
   end
 end
 
-
-
-def create_directory(directory)
-  Command.run "mkdir --parents #{directory}"
+def directory_exists?(directory)
+  File.directory? directory
 end
 
 def change_to(directory)
@@ -99,65 +126,18 @@ def change_to(directory)
   end
 end
 
-def directory_exists?(directory)
-  File.directory? directory
-end
-
 def create_directory(directory)
   if Command.dry_run
-    puts "mkdir --parents"
-  Dir.mkdir()
-
-def sync_with_upstream(package)
-  directory = "#{Config['base_path']}/#{package.local_directory}"
-
-  create_directory package.local_directory unless directory_exists? package.local_directory
-  change_to package.local_directory
-  if directory_exists? '.git'
-    Command.run 'git pull'
+    puts "mkdir --parents #{directory}"
   else
-    Command.run "git clone #{package.remote} ."
+    Dir.mkdir directory unless directory_exists? directory
   end
 end
 
-def get_flags(configure_data)
-  configure_data.class == Array ? configure_data : []
-end
-
-def configure(package)
-  configure = './configure ' + package.configure_flags.join(' ')
-  configure.gsub!('#{base_path}', "#{Config['base_path']}")
-  Command.run "#{configure}"
-end
-
-
-def install(package, with_sudo = false)
-  if package.installable?
-    installation = package.installation_method
-    installation.prepend 'sudo ' if with_sudo
-    Command.run "#{installation}"
-  end
-end
-
-def build(package, building_clean = true)
-  Command.run 'make clean' if building_clean
-  preconfigure package if package.needs_preconfiguration?
-  configure package if package.configurable?
-  Command.run 'make'
-end
-
-def get_version(package)
-  puts package['version']
-end
-
-def list_all(packages)
-  puts packages.keys
-end
-
-def display_info(name, package_data)
+def display_info(name, spec)
   puts name, '---'
-  package_data.each do |key, value|
-    formatted_key = key.ljust 'alternate_install'.length + 3, ' '
+  spec.each do |key, value|
+    formatted_key = key.ljust 20, ' '
     puts "#{formatted_key}#{value}"
   end
   puts "\n"
@@ -169,13 +149,10 @@ def install_packages(list, build_only = false, with_sudo = false)
   packages.each do |name, spec|
     package = Package.new spec
 
-    puts "\nFor package #{name}..."
-
-    sync_with_upstream package
-    checkout_version package.version
-
-    build package if package.buildable?
-    install package, with_sudo unless build_only == true
+    package.sync_with_upstream
+    package.checkout package.version
+    package.build if package.buildable?
+    package.install with_sudo if package.installable? && build_only == false
   end
 end
 
@@ -183,16 +160,16 @@ command :list do |c|
   c.syntax = 'gpm list [options]'
   c.summary = 'Lists available packages'
   c.action do |args, options|
-    list_all Config['packages']
+    puts Config['packages'].keys
   end
 end
 
-command :version do |c|
-  c.syntax = 'gpm version <package>'
-  c.summary = 'Displays the selected version of a given package.'
+command :info do |c|
+  c.syntax = 'gpm info [options]'
+  c.summary = 'Displays known data for package name.'
   c.action do |args, options|
     args.each do |package_name|
-      get_version Config['packages'][package_name]
+      display_info package_name, Config['packages'][package_name]
     end
   end
 end
@@ -208,16 +185,5 @@ command :install do |c|
       build_only: false, for_real: false, install_with_sudo: false
     Command.dry_run = false if options.for_real
     install_packages args, options.build_only, options.install_with_sudo
-  end
-end
-
-command :info do |c|
-  c.syntax = 'gpm info [options]'
-  c.summary = 'Displays known data for package name.'
-  c.option '--some-switch', 'Some switch that does something'
-  c.action do |args, options|
-    args.each do |package_name|
-      display_info package_name, Config['packages'][package_name]
-    end
   end
 end

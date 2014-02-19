@@ -11,8 +11,7 @@ packages:
     install: false
   nginx: 
     configure: 
-      flags: 
-        - "--add-module=#{base_path}/patches/naxsi/naxsi_src"
+      - "--add-module=#{base_path}/patches/naxsi/naxsi_src"
     depends: 
       - patches/naxsi
     local: www/nginx
@@ -27,10 +26,9 @@ packages:
     preconfigure:
       - "./buildconf --force"
     configure: 
-      flags: 
-        - "--enable-fpm"
-        - "--enable-json"
-        - "--with-openssl"
+      - "--enable-fpm"
+      - "--enable-json"
+      - "--with-openssl"
     local: lang/php
     remote: "https://github.com/php/php-src.git"
     version: php-5.5.9
