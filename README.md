@@ -1,3 +1,5 @@
+[![Code Climate](https://codeclimate.com/github/colstrom/gpm.png)](https://codeclimate.com/github/colstrom/gpm)
+
 Ghetto Package Management
 =========================
 
