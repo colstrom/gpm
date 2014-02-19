@@ -108,7 +108,7 @@ class Package
     Command.run 'make'
   end
 
-  def install(with_sudo = false, elsewhere)
+  def deploy(with_sudo = false, elsewhere)
     installation = installation_method
     installation.prepend 'sudo ' if with_sudo
     installation.concat " DESTDIR=#{elsewhere}" if elsewhere
@@ -117,12 +117,21 @@ class Package
 
   def build_rpm
     build_path = "/data/tmp/build/#{@spec['local']}"
-    install build_path
-    contents = Dir.entries(build_path).join(' ') if directory_exists? build_path
+    deploy build_path
+    content = Dir.entries(build_path).join(' ') if directory_exists? build_path
     Command.run "fpm -s dir -t rpm -n #{@name} -v #{version} \
-      -C #{build_path} -p /data/rpm/#{@name}-#{version} #{contents}"
+      -C #{build_path} -p /data/rpm/#{@name}-#{version} #{content}"
   end
 
+  def install(build_only = false, with_sudo = false, building_rpm = false)
+    sync_with_upstream
+    checkout version
+    build if buildable?
+    if installable?
+      build_rpm if building_rpm
+      deploy with_sudo unless build_only
+    end
+  end
 end
 
 def directory_exists?(directory)
@@ -154,19 +163,12 @@ def display_info(name, spec)
   puts "\n"
 end
 
-def install_packages(list, build_only = false, with_sudo = false, rpm = false)
+def install_packages(list, build_only = false, sudo = false, rpm = false)
   packages = Config['packages'].select { |name, data| list.include? name }
 
   packages.each do |name, spec|
     package = Package.new name, spec
-
-    package.sync_with_upstream
-    package.checkout package.version
-    package.build if package.buildable?
-    if package.installable?
-      package.build_rpm if rpm
-      package.install with_sudo unless build_only
-    end
+    package.install build_only, sudo, rpm
   end
 end
 
