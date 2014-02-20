@@ -6,7 +6,7 @@ require 'commander/import'
 require 'fileutils'
 
 program :name, 'gpm'
-program :version, '1.0.0'
+program :version, '1.0.1'
 program :description, 'Ghetto Package Management'
 
 Config = YAML.load_file 'gpm.yaml'
@@ -81,7 +81,7 @@ class Package
   end
 
   def checkout(tag)
-    change_to(local_directory)
+    change_to local_directory
     Command.run "git checkout #{tag}"
   end
 
@@ -120,7 +120,7 @@ class Package
     deploy build_path
     content = Dir.entries(build_path).join(' ') if directory_exists? build_path
     Command.run "fpm -s dir -t rpm -n #{@name} -v #{version} \
-      -C #{build_path} -p /data/rpm/#{@name}-#{version} #{content}"
+      -C #{build_path} -p /data/rpm/#{@name}-#{version}.rpm #{content}"
   end
 
   def install(build_only = false, with_sudo = false, building_rpm = false)
@@ -154,10 +154,18 @@ def create_directory(directory)
   end
 end
 
+def longest_key(hash)
+  longest_known = 0
+  hash.keys.each do |key|
+    longest_known = key.length if key.length > longest_known
+  end
+  longest_known
+end
+
 def display_info(name, spec)
   puts name, '---'
   spec.each do |key, value|
-    formatted_key = key.ljust 20, ' '
+    formatted_key = key.ljust longest_key(spec) + 3, ' '
     puts "#{formatted_key}#{value}"
   end
   puts "\n"
