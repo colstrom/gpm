@@ -118,7 +118,7 @@ class Package
   def build_rpm(with_sudo = false)
     build_path = "/data/tmp/build/#{@spec['local']}"
     deploy with_sudo, build_path
-    content = Dir.entries(build_path).join(' ') if directory_exists? build_path
+    content = directory_contents(build_path).join(' ')
     Command.run "fpm -s dir -t rpm -n #{@name} -v #{version} \
       -C #{build_path} -p /data/rpm/#{@name}-#{version}.rpm #{content}"
   end
@@ -136,6 +136,14 @@ end
 
 def directory_exists?(directory)
   File.directory? directory
+end
+
+def directory_contents(directory, filter = ['.', '..'])
+  if directory_exists? directory
+    Dir.entries(directory).reject! { |entry| filter.include? entry }
+  else
+    []
+  end
 end
 
 def change_to(directory)
