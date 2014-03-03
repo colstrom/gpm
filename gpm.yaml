@@ -53,7 +53,7 @@ packages:
     version: 3.0
   zsh: 
     preconfigure:
-      -"autoconf"
+      - "autoconf"
     configure: true
     local: shells/zsh
     remote: "https://github.com/zsh-users/zsh.git"
