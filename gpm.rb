@@ -108,16 +108,16 @@ class Package
     Command.run 'make'
   end
 
-  def deploy(with_sudo = false, elsewhere)
+  def deploy(with_sudo = false, elsewhere = false)
     installation = installation_method
     installation.prepend 'sudo ' if with_sudo
     installation.concat " DESTDIR=#{elsewhere}" if elsewhere
     Command.run "#{installation}"
   end
 
-  def build_rpm
+  def build_rpm(with_sudo = false)
     build_path = "/data/tmp/build/#{@spec['local']}"
-    deploy build_path
+    deploy with_sudo, build_path
     content = Dir.entries(build_path).join(' ') if directory_exists? build_path
     Command.run "fpm -s dir -t rpm -n #{@name} -v #{version} \
       -C #{build_path} -p /data/rpm/#{@name}-#{version}.rpm #{content}"
