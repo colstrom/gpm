@@ -57,11 +57,11 @@ class Package
   end
 
   def buildable?
-    (defined? @spec['build'])  ? @spec['build'] : true
+    @spec['build'].nil? ? true : @spec['build']
   end
 
   def installable?
-    (defined? @spec['install']) ? @spec['install'] : true
+    @spec['install'].nil? ? true : @spec['install']
   end
 
   def installation_method
