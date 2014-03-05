@@ -4,9 +4,10 @@ require 'yaml'
 require 'rubygems'
 require 'commander/import'
 require 'fileutils'
+require 'github_api'
 
 program :name, 'gpm'
-program :version, '1.0.1'
+program :version, '1.1.0'
 program :description, 'Ghetto Package Management'
 
 Config = YAML.load_file 'gpm.yaml'
@@ -78,6 +79,13 @@ class Package
 
   def version
     @spec['version']
+  end
+
+  def releases(how_far_back)
+    user, repo = @spec['remote'].match('https?://.+/(.+)/(.+).git').captures
+    Github.repos.tags(user: user, repo: repo).first(how_far_back).each do |tag|
+      puts tag['name']
+    end
   end
 
   def checkout(tag)
@@ -188,6 +196,17 @@ def install_packages(list, build_only = false, sudo = false, rpm = false)
   end
 end
 
+def get_releases(list, history_depth = 10)
+  packages = Config['packages'].select { |name, data| list.include? name }
+
+  packages.each do |name, spec|
+    package = Package.new name, spec
+    puts "\nCurrently using #{name} @ #{package.version}"
+    puts "Latest #{history_depth} releases known are...\n"
+    package.releases history_depth
+  end
+end
+
 command :list do |c|
   c.syntax = 'gpm list [options]'
   c.summary = 'Lists available packages'
@@ -197,12 +216,22 @@ command :list do |c|
 end
 
 command :info do |c|
-  c.syntax = 'gpm info [options]'
+  c.syntax = 'gpm info <pacakge>'
   c.summary = 'Displays known data for package name.'
   c.action do |args, options|
     args.each do |package_name|
       display_info package_name, Config['packages'][package_name]
     end
+  end
+end
+
+command :releases do |c|
+  c.syntax = 'gpm releases [options] <package>'
+  c.summary = 'Checks current release against available releases'
+  c.option '--history-depth INT', Integer, 'How far back to check releases?'
+  c.action do |args, options|
+    options.default history_depth: 10
+    get_releases args, options.history_depth
   end
 end
 
