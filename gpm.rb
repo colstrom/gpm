@@ -7,7 +7,7 @@ require 'fileutils'
 require 'github_api'
 
 program :name, 'gpm'
-program :version, '1.1.1'
+program :version, '1.1.2'
 program :description, 'Ghetto Package Management'
 
 Config = YAML.load_file 'gpm.yaml'
@@ -90,7 +90,12 @@ class Package
 
   def checkout(tag)
     change_to local_directory
+    discard_changes
     Command.run "git checkout #{tag}"
+  end
+
+  def discard_changes
+    Command.run 'git stash --keep-index && git stash drop'
   end
 
   def sync_with_upstream
