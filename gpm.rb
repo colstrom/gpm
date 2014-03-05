@@ -7,7 +7,7 @@ require 'fileutils'
 require 'github_api'
 
 program :name, 'gpm'
-program :version, '1.1.0'
+program :version, '1.1.1'
 program :description, 'Ghetto Package Management'
 
 Config = YAML.load_file 'gpm.yaml'
@@ -109,11 +109,15 @@ class Package
     Command.run "#{configuration}"
   end
 
+  def build_command
+    @spec['alternate_build'].nil? ? 'make' : @spec['alternate_build']
+  end
+
   def build(building_clean = true)
     Command.run 'make clean' if building_clean
     preconfigure if needs_preconfiguration?
     configure if configurable?
-    Command.run 'make'
+    Command.run build_command
   end
 
   def deploy(with_sudo = false, elsewhere = false)

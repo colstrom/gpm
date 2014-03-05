@@ -58,3 +58,7 @@ packages:
     local: shells/zsh
     remote: "https://github.com/zsh-users/zsh.git"
     version: zsh-5.0.5
+  haproxy:
+    remote: "https://github.com/haproxy/haproxy.git"
+    configure: false
+    alternate_build: "make TARGET=linux26 CPU=native USE_OPENSSL=1 USE_ZLIB=1"
