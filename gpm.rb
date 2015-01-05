@@ -7,7 +7,7 @@ require 'fileutils'
 require 'github_api'
 
 program :name, 'gpm'
-program :version, '1.1.2'
+program :version, '1.1.3'
 program :description, 'Ghetto Package Management'
 
 Config = YAML.load_file 'gpm.yaml'
@@ -197,7 +197,7 @@ def display_info(name, spec)
 end
 
 def install_packages(list, build_only = false, sudo = false, rpm = false)
-  packages = Config['packages'].select { |name, data| list.include? name }
+  packages = Config['packages'].select { |name, _data| list.include? name }
 
   packages.each do |name, spec|
     package = Package.new name, spec
@@ -206,7 +206,7 @@ def install_packages(list, build_only = false, sudo = false, rpm = false)
 end
 
 def get_releases(list, history_depth = 10)
-  packages = Config['packages'].select { |name, data| list.include? name }
+  packages = Config['packages'].select { |name, _data| list.include? name }
 
   packages.each do |name, spec|
     package = Package.new name, spec
@@ -219,7 +219,7 @@ end
 command :list do |c|
   c.syntax = 'gpm list [options]'
   c.summary = 'Lists available packages'
-  c.action do |args, options|
+  c.action do
     puts Config['packages'].keys
   end
 end
@@ -227,7 +227,7 @@ end
 command :info do |c|
   c.syntax = 'gpm info <pacakge>'
   c.summary = 'Displays known data for package name.'
-  c.action do |args, options|
+  c.action do |args, _options|
     args.each do |package_name|
       display_info package_name, Config['packages'][package_name]
     end
